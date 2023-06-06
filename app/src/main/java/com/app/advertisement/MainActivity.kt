@@ -1,22 +1,22 @@
 package com.app.advertisement
 
-import android.media.MediaParser
-import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
 import android.os.StrictMode
 import android.util.Log
 import android.view.View
 import android.widget.MediaController
-import android.widget.Toast
 import android.widget.VideoView
 import androidx.activity.ComponentActivity
 import com.app.advertisement.models.Link
 import com.app.advertisement.models.LinkResponse
 import com.app.advertisement.services.ApiService
+import io.reactivex.Emitter
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import io.socket.client.IO;
+import io.socket.client.Socket;
 
 class MainActivity : ComponentActivity() {
 
@@ -25,7 +25,25 @@ class MainActivity : ComponentActivity() {
     var mediaControls: MediaController? = null
     var videos: MutableList<String>? = ArrayList()
     var currentVideo: Int = 0
+    var socket: Socket = IO.socket("http://192.168.1.173:8000")
 
+    private fun socketIO() {
+        try {
+            socket.connect()
+
+            socket.emit("CONNECT", "HELLO")
+
+
+            socket.on("msgToClient", object : io.socket.emitter.Emitter.Listener {
+                override fun call(vararg args: Any?) {
+                    Log.d("Message", args.get(0).toString())
+                    pauseVideo()
+                }
+            })
+        } catch (error: Exception) {
+            Log.e("Error", error.toString())
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,5 +101,10 @@ class MainActivity : ComponentActivity() {
         simpleVideoView!!.setVideoURI(Uri.parse(url))
         simpleVideoView!!.requestFocus()
         simpleVideoView!!.start()
+    }
+
+    private fun pauseVideo() {
+        Log.d("Message", "Pause")
+        simpleVideoView!!.pause()
     }
 }
