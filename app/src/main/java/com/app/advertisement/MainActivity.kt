@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
     var currentVideo: Int = 0
     var socket: Socket = IO.socket("http://192.168.1.173:8000")
 
-    private fun socketIO() {
+    private fun initSocket() {
         try {
             socket.connect()
 
@@ -48,6 +48,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        initSocket()
 
         val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
