@@ -11,12 +11,14 @@ import androidx.activity.ComponentActivity
 import com.app.advertisement.models.Link
 import com.app.advertisement.models.LinkResponse
 import com.app.advertisement.services.ApiService
-import io.reactivex.Emitter
+import com.google.gson.Gson
+import io.socket.client.IO
+import io.socket.client.Socket
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import io.socket.client.IO;
-import io.socket.client.Socket;
+
 
 class MainActivity : ComponentActivity() {
 
@@ -25,26 +27,18 @@ class MainActivity : ComponentActivity() {
     var mediaControls: MediaController? = null
     var videos: MutableList<String>? = ArrayList()
     var currentVideo: Int = 0
-    var socket: Socket = IO.socket("http://192.168.1.173:8000")
-
-    private fun initSocket() {
-        try {
-            socket.connect()
-
-            socket.emit("CONNECT", "HELLO")
+    var socket: Socket = IO.socket("http://192.168.0.103:3000")
 
 
-            socket.on("msgToClient", object : io.socket.emitter.Emitter.Listener {
-                override fun call(vararg args: Any?) {
-                    Log.d("Message", args.get(0).toString())
-                    pauseVideo()
-                }
-            })
-        } catch (error: Exception) {
-            Log.e("Error", error.toString())
+    private fun setVideomoi(links:List<Link>) {
+        videos?.clear();
+        Log.d("Message", links.toString())
+        for (z in links) {
+            videos?.add(z.link)
         }
-    }
 
+        playVideo()
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -76,7 +70,47 @@ class MainActivity : ComponentActivity() {
         // call when server emit refresh new video
         getLinkVideo()
     }
+    private fun initSocket() {
+        try {
+            socket.connect()
+            socket.on("control", object : io.socket.emitter.Emitter.Listener {
+                override fun call(vararg args: Any?) {
+                    runOnUiThread(Runnable {
+                        var data = args.get(0) as JSONObject;
 
+                        val gson = Gson();
+                        var res: LinkResponse =
+                            gson.fromJson(data.toString(), LinkResponse::class.java)
+                        Log.d("Message", data.toString())
+
+                        when (res.control)
+                        {
+                            "bo1" -> setVideomoi(res.data)
+                            "bo2" -> setVideomoi(res.data)
+                            "bo3" -> setVideomoi(res.data)
+                            "toi" -> {
+                                currentVideo++
+                                playVideo();
+                            }
+                            "lui" -> {
+                                currentVideo--
+                                playVideo()
+                            }
+                            "dung" -> pauseVideo()
+
+                            else -> {
+
+                            }
+                        }
+                    })
+
+
+                }
+            })
+        } catch (error: Exception) {
+            Log.e("Error", error.toString())
+        }
+    }
     private fun getLinkVideo() {
         apiService?.api?.getLinkVideo("?device_code=abc")?.enqueue(object : Callback<LinkResponse> {
             override fun onResponse(call: Call<LinkResponse>, response: Response<LinkResponse>) {
@@ -97,7 +131,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun playVideo() {
-
+        if(videos?.size!! == currentVideo)
+        {
+            currentVideo = 0
+        }
+        if(currentVideo < 0)
+        {
+            currentVideo = videos?.size!! - 1
+        }
         val url = videos?.get(currentVideo)
 
         simpleVideoView!!.setVideoURI(Uri.parse(url))
