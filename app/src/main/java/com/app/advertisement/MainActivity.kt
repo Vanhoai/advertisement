@@ -73,40 +73,37 @@ class MainActivity : ComponentActivity() {
     private fun initSocket() {
         try {
             socket.connect()
-            socket.on("control", object : io.socket.emitter.Emitter.Listener {
-                override fun call(vararg args: Any?) {
-                    runOnUiThread(Runnable {
-                        var data = args.get(0) as JSONObject;
+            socket.on("control") { args ->
+                runOnUiThread(Runnable {
+                    val data = args[0] as JSONObject;
 
-                        val gson = Gson();
-                        var res: LinkResponse =
-                            gson.fromJson(data.toString(), LinkResponse::class.java)
-                        Log.d("Message", data.toString())
+                    val gson = Gson();
+                    val res: LinkResponse =
+                        gson.fromJson(data.toString(), LinkResponse::class.java)
+                    Log.d("Message", data.toString())
 
-                        when (res.control)
-                        {
-                            "bo1" -> setVideomoi(res.data)
-                            "bo2" -> setVideomoi(res.data)
-                            "bo3" -> setVideomoi(res.data)
-                            "toi" -> {
-                                currentVideo++
-                                playVideo();
-                            }
-                            "lui" -> {
-                                currentVideo--
-                                playVideo()
-                            }
-                            "dung" -> pauseVideo()
-
-                            else -> {
-
-                            }
+                    when (res.control) {
+                        "bo1" -> setVideomoi(res.data)
+                        "bo2" -> setVideomoi(res.data)
+                        "bo3" -> setVideomoi(res.data)
+                        "toi" -> {
+                            currentVideo++
+                            playVideo();
                         }
-                    })
 
+                        "lui" -> {
+                            currentVideo--
+                            playVideo()
+                        }
 
-                }
-            })
+                        "dung" -> pauseVideo()
+
+                        else -> {
+
+                        }
+                    }
+                })
+            }
         } catch (error: Exception) {
             Log.e("Error", error.toString())
         }
